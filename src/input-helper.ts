@@ -27,11 +27,23 @@ export function getInputs(): UploadInputs {
   const noFileBehavior = ifNoFilesFound;
 
   const folderName = core.getInput(Inputs.FolderName);
+  const concurrencyStr = core.getInput(Inputs.Concurrency) || '8';
+  const concurrency = parseInt(concurrencyStr);
+  const reportLinksFile = core.getInput(Inputs.ReportLinksFile) || undefined;
+  const websiteUrl = core.getInput(Inputs.WebsiteUrl) || undefined;
+  const reportSummaryTitle =
+    core.getInput(Inputs.ReportSummaryTitle) || undefined;
+  const reportSummaryIntro =
+    core.getInput(Inputs.ReportSummaryIntro) || undefined;
 
   if (!noFileBehavior) {
     core.setFailed(
       `Unrecognized ${Inputs.IfNoFilesFound} input. Provided: ${ifNoFilesFound}. Available options: warn, error, ignore.`
     );
+  }
+
+  if (isNaN(concurrency)) {
+    core.setFailed('Invalid concurrency');
   }
 
   const inputs = {
@@ -41,7 +53,24 @@ export function getInputs(): UploadInputs {
     ifNoFilesFound: noFileBehavior,
     direction,
     folderName,
+    concurrency,
   } as UploadInputs;
+
+  if (reportLinksFile) {
+    inputs.reportLinksFile = reportLinksFile;
+  }
+
+  if (websiteUrl) {
+    inputs.websiteUrl = websiteUrl;
+  }
+
+  if (reportSummaryTitle) {
+    inputs.reportSummaryTitle = reportSummaryTitle;
+  }
+
+  if (reportSummaryIntro) {
+    inputs.reportSummaryIntro = reportSummaryIntro;
+  }
 
   const retentionDaysStr = core.getInput(Inputs.RetentionDays);
   if (retentionDaysStr) {

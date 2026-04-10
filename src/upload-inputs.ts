@@ -25,7 +25,7 @@ export interface UploadInputs {
   /**
    * Duration after which artifact will expire in days
    */
-  retentionDays: number;
+  retentionDays?: number;
 
   /**
    * Whether to upload to S3, or download from S3
@@ -41,4 +41,24 @@ export interface UploadInputs {
    * The rate of concurrency for p-map
    */
   concurrency: number;
+
+  /**
+   * Optional path to a report links TSV file
+   */
+  reportLinksFile?: string;
+
+  /**
+   * Optional public website base URL for published reports
+   */
+  websiteUrl?: string;
+
+  /**
+   * Optional job summary heading for published reports
+   */
+  reportSummaryTitle?: string;
+
+  /**
+   * Optional job summary intro text for published reports
+   */
+  reportSummaryIntro?: string;
 }

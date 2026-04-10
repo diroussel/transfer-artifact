@@ -53,6 +53,10 @@ describe('getInputs', () => {
       [Inputs.IfNoFilesFound]: 'warn',
       [Inputs.RetentionDays]: '',
       [Inputs.Concurrency]: '',
+      [Inputs.ReportLinksFile]: '',
+      [Inputs.WebsiteUrl]: '',
+      [Inputs.ReportSummaryTitle]: '',
+      [Inputs.ReportSummaryIntro]: '',
     };
 
     // Mock the core.getInput function to return our test values
@@ -69,6 +73,7 @@ describe('getInputs', () => {
       direction: 'upload',
       folderName: 'test-folder',
       ifNoFilesFound: 'warn',
+      concurrency: 8,
     });
 
     // Verify that required inputs were checked
@@ -87,6 +92,7 @@ describe('getInputs', () => {
       [Inputs.ArtifactBucket]: '', // Empty bucket input
       [Inputs.Direction]: 'upload',
       [Inputs.IfNoFilesFound]: 'warn',
+      [Inputs.Concurrency]: '',
     };
 
     mockGetInput.mockImplementation((name) => mockInputs[name] || '');
@@ -106,6 +112,7 @@ describe('getInputs', () => {
       [Inputs.ArtifactBucket]: '', // Empty bucket input
       [Inputs.Direction]: 'upload',
       [Inputs.IfNoFilesFound]: 'warn',
+      [Inputs.Concurrency]: '',
     };
 
     mockGetInput.mockImplementation((name) => mockInputs[name] || '');
@@ -124,6 +131,7 @@ describe('getInputs', () => {
       [Inputs.Direction]: 'upload',
       [Inputs.IfNoFilesFound]: 'warn',
       [Inputs.RetentionDays]: '90',
+      [Inputs.Concurrency]: '',
     };
 
     mockGetInput.mockImplementation((name) => mockInputs[name] || '');
@@ -144,6 +152,7 @@ describe('getInputs', () => {
       [Inputs.Direction]: 'upload',
       [Inputs.IfNoFilesFound]: 'warn',
       [Inputs.RetentionDays]: 'invalid', // Non-numeric value
+      [Inputs.Concurrency]: '',
     };
 
     mockGetInput.mockImplementation((name) => mockInputs[name] || '');
@@ -164,6 +173,7 @@ describe('getInputs', () => {
       [Inputs.ArtifactBucket]: 'test-bucket',
       [Inputs.Direction]: 'upload',
       [Inputs.IfNoFilesFound]: '', // Invalid empty value
+      [Inputs.Concurrency]: '',
     };
 
     mockGetInput.mockImplementation((name) => mockInputs[name] || '');
@@ -175,5 +185,55 @@ describe('getInputs', () => {
     expect(mockSetFailed).toHaveBeenCalledWith(
       expect.stringContaining('Unrecognized if-no-files-found input')
     );
+  });
+
+  it('should include optional published report inputs when provided', () => {
+    const mockInputs: Record<string, string> = {
+      [Inputs.RunNumber]: '123',
+      [Inputs.FolderName]: 'test-folder',
+      [Inputs.Path]: '/test/path',
+      [Inputs.ArtifactBucket]: 'test-bucket',
+      [Inputs.Direction]: 'upload',
+      [Inputs.IfNoFilesFound]: 'warn',
+      [Inputs.Concurrency]: '4',
+      [Inputs.ReportLinksFile]: '/tmp/report-links.tsv',
+      [Inputs.WebsiteUrl]: 'https://reports.example.com/base',
+      [Inputs.ReportSummaryTitle]: 'UI Test Reports',
+      [Inputs.ReportSummaryIntro]: 'Published report links',
+    };
+
+    mockGetInput.mockImplementation((name) => mockInputs[name] || '');
+
+    expect(getInputs()).toStrictEqual({
+      artifactName: '123-test-folder',
+      artifactBucket: 'test-bucket',
+      searchPath: '/test/path',
+      direction: 'upload',
+      folderName: 'test-folder',
+      ifNoFilesFound: 'warn',
+      concurrency: 4,
+      reportLinksFile: '/tmp/report-links.tsv',
+      websiteUrl: 'https://reports.example.com/base',
+      reportSummaryTitle: 'UI Test Reports',
+      reportSummaryIntro: 'Published report links',
+    });
+  });
+
+  it('should set failed for invalid concurrency', () => {
+    const mockInputs: Record<string, string> = {
+      [Inputs.RunNumber]: '123',
+      [Inputs.FolderName]: 'test-folder',
+      [Inputs.Path]: '/test/path',
+      [Inputs.ArtifactBucket]: 'test-bucket',
+      [Inputs.Direction]: 'upload',
+      [Inputs.IfNoFilesFound]: 'warn',
+      [Inputs.Concurrency]: 'fast',
+    };
+
+    mockGetInput.mockImplementation((name) => mockInputs[name] || '');
+
+    getInputs();
+
+    expect(mockSetFailed).toHaveBeenCalledWith('Invalid concurrency');
   });
 });

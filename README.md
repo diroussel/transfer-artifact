@@ -201,6 +201,55 @@ with:
   path: ${{ github.workspace }}
 ```
 
+### Linking to published reports
+
+If your uploaded files are also available from a public website, you can add report links to the GitHub Actions job summary.
+
+Create a TSV file where each line is:
+
+```text
+label<TAB>path-or-url
+```
+
+The second column can be either:
+
+- an artifact-relative path such as `coverage/index.html`
+- an absolute URL such as `https://reports.example.com/coverage/index.html`
+
+Example:
+
+```yaml
+steps:
+  - name: Create reports
+    run: |
+      mkdir -p coverage
+      echo '<html><body>coverage</body></html>' > coverage/index.html
+      printf 'Coverage Report\tcoverage/index.html\n' > "$RUNNER_TEMP/report-links.tsv"
+
+  - name: Upload reports
+    uses: NHSDigital/transfer-artifact@s3
+    env:
+      bucket: abcd-123456789-eu-west-2-my-S3-bucket
+    with:
+      name: my-folder
+      direction: 'upload'
+      path: coverage
+      report-links-file: ${{ runner.temp }}/report-links.tsv
+      website-url: https://reports.example.com
+      report-summary-title: Coverage Reports
+      report-summary-intro: Published coverage reports for this run.
+```
+
+With the example above, the job summary will include a section like:
+
+```md
+### Coverage Reports
+
+Published coverage reports for this run.
+
+- [Coverage Report](https://reports.example.com/ci-pipeline-upload-artifacts/my-folder/${{ github.run_number }}-my-folder/coverage/index.html)
+```
+
 ### Environment Variables and Tilde Expansion
 
 You can use `~` in the path input as a substitute for `$HOME`. Basic tilde expansion is supported:

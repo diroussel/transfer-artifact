@@ -38,6 +38,24 @@ inputs:
   run-number:
     description: 'Github run number used to identify artifacts'
     default: ${{ github.run_number }}
+  report-links-file:
+    description: >
+      Optional path to a TSV file containing report labels and artifact-relative paths or absolute URLs.
+      Each line must be in the format label<TAB>path-or-url.
+    required: false
+  website-url:
+    description: >
+      Optional public website base URL used to convert artifact-relative report paths into published links.
+    required: false
+  report-summary-title:
+    description: >
+      Optional heading used when adding published report links to the GitHub Actions job summary.
+    required: false
+    default: 'Published Reports'
+  report-summary-intro:
+    description: >
+      Optional paragraph shown before published report links in the GitHub Actions job summary.
+    required: false
 runs:
   using: node24
   main: 'dist/index.cjs'

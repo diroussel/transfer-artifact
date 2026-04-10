@@ -7,6 +7,10 @@ export const Inputs = {
   Direction: 'direction',
   FolderName: 'name',
   Concurrency: 'concurrency',
+  ReportLinksFile: 'report-links-file',
+  WebsiteUrl: 'website-url',
+  ReportSummaryTitle: 'report-summary-title',
+  ReportSummaryIntro: 'report-summary-intro',
 };
 
 export type DirectionOptions = 'upload' | 'download';

@@ -1073,14 +1073,14 @@ var require_util = __commonJS({
         }
         const port = url.port != null ? url.port : url.protocol === "https:" ? 443 : 80;
         let origin = url.origin != null ? url.origin : `${url.protocol || ""}//${url.hostname || ""}:${port}`;
-        let path12 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
+        let path13 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
         if (origin[origin.length - 1] === "/") {
           origin = origin.slice(0, origin.length - 1);
         }
-        if (path12 && path12[0] !== "/") {
-          path12 = `/${path12}`;
+        if (path13 && path13[0] !== "/") {
+          path13 = `/${path13}`;
         }
-        return new URL(`${origin}${path12}`);
+        return new URL(`${origin}${path13}`);
       }
       if (!isHttpOrHttpsPrefixed(url.origin || url.protocol)) {
         throw new InvalidArgumentError("Invalid URL protocol: the URL must start with `http:` or `https:`.");
@@ -1531,39 +1531,39 @@ var require_diagnostics = __commonJS({
       });
       diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
         const {
-          request: { method, path: path12, origin }
+          request: { method, path: path13, origin }
         } = evt;
-        debuglog("sending request to %s %s/%s", method, origin, path12);
+        debuglog("sending request to %s %s/%s", method, origin, path13);
       });
       diagnosticsChannel.channel("undici:request:headers").subscribe((evt) => {
         const {
-          request: { method, path: path12, origin },
+          request: { method, path: path13, origin },
           response: { statusCode }
         } = evt;
         debuglog(
           "received response to %s %s/%s - HTTP %d",
           method,
           origin,
-          path12,
+          path13,
           statusCode
         );
       });
       diagnosticsChannel.channel("undici:request:trailers").subscribe((evt) => {
         const {
-          request: { method, path: path12, origin }
+          request: { method, path: path13, origin }
         } = evt;
-        debuglog("trailers received from %s %s/%s", method, origin, path12);
+        debuglog("trailers received from %s %s/%s", method, origin, path13);
       });
       diagnosticsChannel.channel("undici:request:error").subscribe((evt) => {
         const {
-          request: { method, path: path12, origin },
+          request: { method, path: path13, origin },
           error: error3
         } = evt;
         debuglog(
           "request to %s %s/%s errored - %s",
           method,
           origin,
-          path12,
+          path13,
           error3.message
         );
       });
@@ -1612,9 +1612,9 @@ var require_diagnostics = __commonJS({
         });
         diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
           const {
-            request: { method, path: path12, origin }
+            request: { method, path: path13, origin }
           } = evt;
-          debuglog("sending request to %s %s/%s", method, origin, path12);
+          debuglog("sending request to %s %s/%s", method, origin, path13);
         });
       }
       diagnosticsChannel.channel("undici:websocket:open").subscribe((evt) => {
@@ -1677,7 +1677,7 @@ var require_request = __commonJS({
     var kHandler = /* @__PURE__ */ Symbol("handler");
     var Request2 = class {
       constructor(origin, {
-        path: path12,
+        path: path13,
         method,
         body,
         headers,
@@ -1692,11 +1692,11 @@ var require_request = __commonJS({
         expectContinue,
         servername
       }, handler) {
-        if (typeof path12 !== "string") {
+        if (typeof path13 !== "string") {
           throw new InvalidArgumentError("path must be a string");
-        } else if (path12[0] !== "/" && !(path12.startsWith("http://") || path12.startsWith("https://")) && method !== "CONNECT") {
+        } else if (path13[0] !== "/" && !(path13.startsWith("http://") || path13.startsWith("https://")) && method !== "CONNECT") {
           throw new InvalidArgumentError("path must be an absolute URL or start with a slash");
-        } else if (invalidPathRegex.test(path12)) {
+        } else if (invalidPathRegex.test(path13)) {
           throw new InvalidArgumentError("invalid request path");
         }
         if (typeof method !== "string") {
@@ -1762,7 +1762,7 @@ var require_request = __commonJS({
         this.completed = false;
         this.aborted = false;
         this.upgrade = upgrade || null;
-        this.path = query ? buildURL(path12, query) : path12;
+        this.path = query ? buildURL(path13, query) : path13;
         this.origin = origin;
         this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
         this.blocking = blocking == null ? false : blocking;
@@ -6281,7 +6281,7 @@ var require_client_h1 = __commonJS({
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
     function writeH1(client, request) {
-      const { method, path: path12, host, upgrade, blocking, reset } = request;
+      const { method, path: path13, host, upgrade, blocking, reset } = request;
       let { body, headers, contentLength } = request;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH" || method === "QUERY" || method === "PROPFIND" || method === "PROPPATCH";
       if (util.isFormDataLike(body)) {
@@ -6347,7 +6347,7 @@ var require_client_h1 = __commonJS({
       if (blocking) {
         socket[kBlocking] = true;
       }
-      let header = `${method} ${path12} HTTP/1.1\r
+      let header = `${method} ${path13} HTTP/1.1\r
 `;
       if (typeof host === "string") {
         header += `host: ${host}\r
@@ -6873,7 +6873,7 @@ var require_client_h2 = __commonJS({
     }
     function writeH2(client, request) {
       const session = client[kHTTP2Session];
-      const { method, path: path12, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
+      const { method, path: path13, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
       let { body } = request;
       if (upgrade) {
         util.errorRequest(client, request, new Error("Upgrade not supported for H2"));
@@ -6940,7 +6940,7 @@ var require_client_h2 = __commonJS({
         });
         return true;
       }
-      headers[HTTP2_HEADER_PATH] = path12;
+      headers[HTTP2_HEADER_PATH] = path13;
       headers[HTTP2_HEADER_SCHEME] = "https";
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
@@ -7293,9 +7293,9 @@ var require_redirect_handler = __commonJS({
           return this.handler.onHeaders(statusCode, headers, resume, statusText);
         }
         const { origin, pathname, search } = util.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-        const path12 = search ? `${pathname}${search}` : pathname;
+        const path13 = search ? `${pathname}${search}` : pathname;
         this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin);
-        this.opts.path = path12;
+        this.opts.path = path13;
         this.opts.origin = origin;
         this.opts.maxRedirections = 0;
         this.opts.query = null;
@@ -8529,10 +8529,10 @@ var require_proxy_agent = __commonJS({
         };
         const {
           origin,
-          path: path12 = "/",
+          path: path13 = "/",
           headers = {}
         } = opts;
-        opts.path = origin + path12;
+        opts.path = origin + path13;
         if (!("host" in headers) && !("Host" in headers)) {
           const { host } = new URL2(origin);
           headers.host = host;
@@ -10453,20 +10453,20 @@ var require_mock_utils = __commonJS({
       }
       return true;
     }
-    function safeUrl(path12) {
-      if (typeof path12 !== "string") {
-        return path12;
+    function safeUrl(path13) {
+      if (typeof path13 !== "string") {
+        return path13;
       }
-      const pathSegments = path12.split("?");
+      const pathSegments = path13.split("?");
       if (pathSegments.length !== 2) {
-        return path12;
+        return path13;
       }
       const qp = new URLSearchParams(pathSegments.pop());
       qp.sort();
       return [...pathSegments, qp.toString()].join("?");
     }
-    function matchKey(mockDispatch2, { path: path12, method, body, headers }) {
-      const pathMatch = matchValue(mockDispatch2.path, path12);
+    function matchKey(mockDispatch2, { path: path13, method, body, headers }) {
+      const pathMatch = matchValue(mockDispatch2.path, path13);
       const methodMatch = matchValue(mockDispatch2.method, method);
       const bodyMatch = typeof mockDispatch2.body !== "undefined" ? matchValue(mockDispatch2.body, body) : true;
       const headersMatch = matchHeaders(mockDispatch2, headers);
@@ -10488,7 +10488,7 @@ var require_mock_utils = __commonJS({
     function getMockDispatch(mockDispatches, key) {
       const basePath = key.query ? buildURL(key.path, key.query) : key.path;
       const resolvedPath2 = typeof basePath === "string" ? safeUrl(basePath) : basePath;
-      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path12 }) => matchValue(safeUrl(path12), resolvedPath2));
+      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path13 }) => matchValue(safeUrl(path13), resolvedPath2));
       if (matchedMockDispatches.length === 0) {
         throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath2}'`);
       }
@@ -10526,9 +10526,9 @@ var require_mock_utils = __commonJS({
       }
     }
     function buildKey(opts) {
-      const { path: path12, method, body, headers, query } = opts;
+      const { path: path13, method, body, headers, query } = opts;
       return {
-        path: path12,
+        path: path13,
         method,
         body,
         headers,
@@ -10991,10 +10991,10 @@ var require_pending_interceptors_formatter = __commonJS({
       }
       format(pendingInterceptors) {
         const withPrettyHeaders = pendingInterceptors.map(
-          ({ method, path: path12, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
+          ({ method, path: path13, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
             Method: method,
             Origin: origin,
-            Path: path12,
+            Path: path13,
             "Status code": statusCode,
             Persistent: persist ? PERSISTENT : NOT_PERSISTENT,
             Invocations: timesInvoked,
@@ -15875,9 +15875,9 @@ var require_util6 = __commonJS({
         }
       }
     }
-    function validateCookiePath(path12) {
-      for (let i5 = 0; i5 < path12.length; ++i5) {
-        const code = path12.charCodeAt(i5);
+    function validateCookiePath(path13) {
+      for (let i5 = 0; i5 < path13.length; ++i5) {
+        const code = path13.charCodeAt(i5);
         if (code < 32 || // exclude CTLs (0-31)
         code === 127 || // DEL
         code === 59) {
@@ -18517,11 +18517,11 @@ var require_undici = __commonJS({
           if (typeof opts.path !== "string") {
             throw new InvalidArgumentError("invalid opts.path");
           }
-          let path12 = opts.path;
+          let path13 = opts.path;
           if (!opts.path.startsWith("/")) {
-            path12 = `/${path12}`;
+            path13 = `/${path13}`;
           }
-          url = new URL(util.parseOrigin(url).origin + path12);
+          url = new URL(util.parseOrigin(url).origin + path13);
         } else {
           if (!opts) {
             opts = typeof url === "object" ? url : {};
@@ -19995,12 +19995,12 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             const password = request.password ?? "";
             auth = `${username}:${password}`;
           }
-          let path12 = request.path;
+          let path13 = request.path;
           if (queryString) {
-            path12 += `?${queryString}`;
+            path13 += `?${queryString}`;
           }
           if (request.fragment) {
-            path12 += `#${request.fragment}`;
+            path13 += `#${request.fragment}`;
           }
           let hostname = request.hostname ?? "";
           if (hostname[0] === "[" && hostname.endsWith("]")) {
@@ -20012,7 +20012,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             headers: request.headers,
             host: hostname,
             method: request.method,
-            path: path12,
+            path: path13,
             port: request.port,
             agent,
             auth
@@ -20295,16 +20295,16 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             reject(err);
           };
           const queryString = querystringBuilder.buildQueryString(query || {});
-          let path12 = request.path;
+          let path13 = request.path;
           if (queryString) {
-            path12 += `?${queryString}`;
+            path13 += `?${queryString}`;
           }
           if (request.fragment) {
-            path12 += `#${request.fragment}`;
+            path13 += `#${request.fragment}`;
           }
           const req = session.request({
             ...request.headers,
-            [http2.constants.HTTP2_HEADER_PATH]: path12,
+            [http2.constants.HTTP2_HEADER_PATH]: path13,
             [http2.constants.HTTP2_HEADER_METHOD]: method
           });
           session.ref();
@@ -20491,13 +20491,13 @@ var require_dist_cjs11 = __commonJS({
           const abortError = buildAbortError(abortSignal);
           return Promise.reject(abortError);
         }
-        let path12 = request.path;
+        let path13 = request.path;
         const queryString = querystringBuilder.buildQueryString(request.query || {});
         if (queryString) {
-          path12 += `?${queryString}`;
+          path13 += `?${queryString}`;
         }
         if (request.fragment) {
-          path12 += `#${request.fragment}`;
+          path13 += `#${request.fragment}`;
         }
         let auth = "";
         if (request.username != null || request.password != null) {
@@ -20506,7 +20506,7 @@ var require_dist_cjs11 = __commonJS({
           auth = `${username}:${password}@`;
         }
         const { port, method } = request;
-        const url = `${request.protocol}//${auth}${request.hostname}${port ? `:${port}` : ""}${path12}`;
+        const url = `${request.protocol}//${auth}${request.hostname}${port ? `:${port}` : ""}${path13}`;
         const body = method === "GET" || method === "HEAD" ? void 0 : request.body;
         const requestOptions = {
           body,
@@ -21387,13 +21387,13 @@ function __disposeResources(env) {
   }
   return next();
 }
-function __rewriteRelativeImportExtension(path12, preserveJsx) {
-  if (typeof path12 === "string" && /^\.\.?\//.test(path12)) {
-    return path12.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m5, tsx, d5, ext, cm) {
+function __rewriteRelativeImportExtension(path13, preserveJsx) {
+  if (typeof path13 === "string" && /^\.\.?\//.test(path13)) {
+    return path13.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m5, tsx, d5, ext, cm) {
       return tsx ? preserveJsx ? ".jsx" : ".js" : d5 && (!ext || !cm) ? m5 : d5 + ext + "." + cm.toLowerCase() + "js";
     });
   }
-  return path12;
+  return path13;
 }
 var extendStatics, __assign, __createBinding, __setModuleDefault, ownKeys, _SuppressedError, tslib_es6_default;
 var init_tslib_es6 = __esm({
@@ -25684,11 +25684,11 @@ var init_HttpBindingProtocol = __esm({
           const opTraits = translateTraits(operationSchema.traits);
           if (opTraits.http) {
             request.method = opTraits.http[0];
-            const [path12, search] = opTraits.http[1].split("?");
+            const [path13, search] = opTraits.http[1].split("?");
             if (request.path == "/") {
-              request.path = path12;
+              request.path = path13;
             } else {
-              request.path += path12;
+              request.path += path13;
             }
             const traitSearchParams = new URLSearchParams(search ?? "");
             Object.assign(query, Object.fromEntries(traitSearchParams));
@@ -26084,8 +26084,8 @@ var init_requestBuilder = __esm({
         return this;
       }
       p(memberName, labelValueProvider, uriLabel, isGreedyLabel) {
-        this.resolvePathStack.push((path12) => {
-          this.path = resolvedPath(path12, this.input, memberName, labelValueProvider, uriLabel, isGreedyLabel);
+        this.resolvePathStack.push((path13) => {
+          this.path = resolvedPath(path13, this.input, memberName, labelValueProvider, uriLabel, isGreedyLabel);
         });
         return this;
       }
@@ -28006,11 +28006,11 @@ var init_SmithyRpcV2CborProtocol = __esm({
           }
         }
         const { service, operation: operation2 } = (0, import_util_middleware3.getSmithyContext)(context);
-        const path12 = `/service/${service}/operation/${operation2}`;
+        const path13 = `/service/${service}/operation/${operation2}`;
         if (request.path.endsWith("/")) {
-          request.path += path12.slice(1);
+          request.path += path13.slice(1);
         } else {
-          request.path += path12;
+          request.path += path13;
         }
         return request;
       }
@@ -31940,10 +31940,10 @@ ${longDate}
 ${credentialScope}
 ${utilHexEncoding.toHex(hashedRequest)}`;
       }
-      getCanonicalPath({ path: path12 }) {
+      getCanonicalPath({ path: path13 }) {
         if (this.uriEscapePath) {
           const normalizedPathSegments = [];
-          for (const pathSegment of path12.split("/")) {
+          for (const pathSegment of path13.split("/")) {
             if (pathSegment?.length === 0)
               continue;
             if (pathSegment === ".")
@@ -31954,11 +31954,11 @@ ${utilHexEncoding.toHex(hashedRequest)}`;
               normalizedPathSegments.push(pathSegment);
             }
           }
-          const normalizedPath = `${path12?.startsWith("/") ? "/" : ""}${normalizedPathSegments.join("/")}${normalizedPathSegments.length > 0 && path12?.endsWith("/") ? "/" : ""}`;
+          const normalizedPath = `${path13?.startsWith("/") ? "/" : ""}${normalizedPathSegments.join("/")}${normalizedPathSegments.length > 0 && path13?.endsWith("/") ? "/" : ""}`;
           const doubleEncoded = utilUriEscape.escapeUri(normalizedPath);
           return doubleEncoded.replace(/%2F/g, "/");
         }
-        return path12;
+        return path13;
       }
       validateResolvedCredentials(credentials) {
         if (typeof credentials !== "object" || typeof credentials.accessKeyId !== "string" || typeof credentials.secretAccessKey !== "string") {
@@ -32419,9 +32419,9 @@ var init_createPaginator = __esm({
       command = withCommand(command) ?? command;
       return await client.send(command, ...args);
     };
-    get = (fromObject, path12) => {
+    get = (fromObject, path13) => {
       let cursor2 = fromObject;
-      const pathComponents = path12.split(".");
+      const pathComponents = path13.split(".");
       for (const step of pathComponents) {
         if (!cursor2 || typeof cursor2 !== "object") {
           return void 0;
@@ -33322,18 +33322,18 @@ var require_dist_cjs33 = __commonJS({
       }
     };
     var booleanEquals = (value1, value2) => value1 === value2;
-    var getAttrPathList = (path12) => {
-      const parts = path12.split(".");
+    var getAttrPathList = (path13) => {
+      const parts = path13.split(".");
       const pathList = [];
       for (const part of parts) {
         const squareBracketIndex = part.indexOf("[");
         if (squareBracketIndex !== -1) {
           if (part.indexOf("]") !== part.length - 1) {
-            throw new EndpointError(`Path: '${path12}' does not end with ']'`);
+            throw new EndpointError(`Path: '${path13}' does not end with ']'`);
           }
           const arrayIndex = part.slice(squareBracketIndex + 1, -1);
           if (Number.isNaN(parseInt(arrayIndex))) {
-            throw new EndpointError(`Invalid array index: '${arrayIndex}' in path: '${path12}'`);
+            throw new EndpointError(`Invalid array index: '${arrayIndex}' in path: '${path13}'`);
           }
           if (squareBracketIndex !== 0) {
             pathList.push(part.slice(0, squareBracketIndex));
@@ -33345,9 +33345,9 @@ var require_dist_cjs33 = __commonJS({
       }
       return pathList;
     };
-    var getAttr = (value, path12) => getAttrPathList(path12).reduce((acc, index) => {
+    var getAttr = (value, path13) => getAttrPathList(path13).reduce((acc, index) => {
       if (typeof acc !== "object") {
-        throw new EndpointError(`Index '${index}' in '${path12}' not found in '${JSON.stringify(value)}'`);
+        throw new EndpointError(`Index '${index}' in '${path13}' not found in '${JSON.stringify(value)}'`);
       } else if (Array.isArray(acc)) {
         return acc[parseInt(index)];
       }
@@ -33366,8 +33366,8 @@ var require_dist_cjs33 = __commonJS({
             return value;
           }
           if (typeof value === "object" && "hostname" in value) {
-            const { hostname: hostname2, port, protocol: protocol2 = "", path: path12 = "", query = {} } = value;
-            const url = new URL(`${protocol2}//${hostname2}${port ? `:${port}` : ""}${path12}`);
+            const { hostname: hostname2, port, protocol: protocol2 = "", path: path13 = "", query = {} } = value;
+            const url = new URL(`${protocol2}//${hostname2}${port ? `:${port}` : ""}${path13}`);
             url.search = Object.entries(query).map(([k5, v5]) => `${k5}=${v5}`).join("&");
             return url;
           }
@@ -35049,14 +35049,14 @@ var require_readFile = __commonJS({
     var promises_1 = require("node:fs/promises");
     exports2.filePromises = {};
     exports2.fileIntercept = {};
-    var readFile = (path12, options) => {
-      if (exports2.fileIntercept[path12] !== void 0) {
-        return exports2.fileIntercept[path12];
+    var readFile = (path13, options) => {
+      if (exports2.fileIntercept[path13] !== void 0) {
+        return exports2.fileIntercept[path13];
       }
-      if (!exports2.filePromises[path12] || options?.ignoreCache) {
-        exports2.filePromises[path12] = (0, promises_1.readFile)(path12, "utf8");
+      if (!exports2.filePromises[path13] || options?.ignoreCache) {
+        exports2.filePromises[path13] = (0, promises_1.readFile)(path13, "utf8");
       }
-      return exports2.filePromises[path12];
+      return exports2.filePromises[path13];
     };
     exports2.readFile = readFile;
   }
@@ -35069,7 +35069,7 @@ var require_dist_cjs42 = __commonJS({
     var getHomeDir = require_getHomeDir();
     var getSSOTokenFilepath = require_getSSOTokenFilepath();
     var getSSOTokenFromFile = require_getSSOTokenFromFile();
-    var path12 = require("path");
+    var path13 = require("path");
     var types = require_dist_cjs();
     var readFile = require_readFile();
     var ENV_PROFILE = "AWS_PROFILE";
@@ -35091,9 +35091,9 @@ var require_dist_cjs42 = __commonJS({
       ...data2.default && { default: data2.default }
     });
     var ENV_CONFIG_PATH = "AWS_CONFIG_FILE";
-    var getConfigFilepath = () => process.env[ENV_CONFIG_PATH] || path12.join(getHomeDir.getHomeDir(), ".aws", "config");
+    var getConfigFilepath = () => process.env[ENV_CONFIG_PATH] || path13.join(getHomeDir.getHomeDir(), ".aws", "config");
     var ENV_CREDENTIALS_PATH = "AWS_SHARED_CREDENTIALS_FILE";
-    var getCredentialsFilepath = () => process.env[ENV_CREDENTIALS_PATH] || path12.join(getHomeDir.getHomeDir(), ".aws", "credentials");
+    var getCredentialsFilepath = () => process.env[ENV_CREDENTIALS_PATH] || path13.join(getHomeDir.getHomeDir(), ".aws", "credentials");
     var prefixKeyRegex = /^([\w-]+)\s(["'])?([\w-@\+\.%:/]+)\2$/;
     var profileNameBlockList = ["__proto__", "profile __proto__"];
     var parseIni = (iniData) => {
@@ -35148,11 +35148,11 @@ var require_dist_cjs42 = __commonJS({
       const relativeHomeDirPrefix = "~/";
       let resolvedFilepath = filepath;
       if (filepath.startsWith(relativeHomeDirPrefix)) {
-        resolvedFilepath = path12.join(homeDir, filepath.slice(2));
+        resolvedFilepath = path13.join(homeDir, filepath.slice(2));
       }
       let resolvedConfigFilepath = configFilepath;
       if (configFilepath.startsWith(relativeHomeDirPrefix)) {
-        resolvedConfigFilepath = path12.join(homeDir, configFilepath.slice(2));
+        resolvedConfigFilepath = path13.join(homeDir, configFilepath.slice(2));
       }
       const parsedFiles = await Promise.all([
         readFile.readFile(resolvedConfigFilepath, {
@@ -35191,8 +35191,8 @@ var require_dist_cjs42 = __commonJS({
       getFileRecord() {
         return readFile.fileIntercept;
       },
-      interceptFile(path13, contents) {
-        readFile.fileIntercept[path13] = Promise.resolve(contents);
+      interceptFile(path14, contents) {
+        readFile.fileIntercept[path14] = Promise.resolve(contents);
       },
       getTokenRecord() {
         return getSSOTokenFromFile.tokenIntercept;
@@ -35517,8 +35517,8 @@ var require_dist_cjs45 = __commonJS({
               return endpoint.url.href;
             }
             if ("hostname" in endpoint) {
-              const { protocol, hostname, port, path: path12 } = endpoint;
-              return `${protocol}//${hostname}${port ? ":" + port : ""}${path12}`;
+              const { protocol, hostname, port, path: path13 } = endpoint;
+              return `${protocol}//${hostname}${port ? ":" + port : ""}${path13}`;
             }
           }
           return endpoint;
@@ -49183,7 +49183,7 @@ var require_dist_cjs66 = __commonJS({
 var require_dist_cjs67 = __commonJS({
   "node_modules/@smithy/hash-stream-node/dist-cjs/index.js"(exports2) {
     "use strict";
-    var fs8 = require("fs");
+    var fs9 = require("fs");
     var utilUtf8 = require_dist_cjs6();
     var stream = require("stream");
     var HashCalculator = class extends stream.Writable {
@@ -49206,7 +49206,7 @@ var require_dist_cjs67 = __commonJS({
         reject(new Error("Unable to calculate hash for non-file streams."));
         return;
       }
-      const fileStreamTee = fs8.createReadStream(fileStream.path, {
+      const fileStreamTee = fs9.createReadStream(fileStream.path, {
         start: fileStream.start,
         end: fileStream.end
       });
@@ -52069,7 +52069,7 @@ var require_minimatch = __commonJS({
   "node_modules/minimatch/minimatch.js"(exports2, module2) {
     module2.exports = minimatch2;
     minimatch2.Minimatch = Minimatch2;
-    var path12 = (function() {
+    var path13 = (function() {
       try {
         return require("path");
       } catch (e5) {
@@ -52077,7 +52077,7 @@ var require_minimatch = __commonJS({
     })() || {
       sep: "/"
     };
-    minimatch2.sep = path12.sep;
+    minimatch2.sep = path13.sep;
     var GLOBSTAR = minimatch2.GLOBSTAR = Minimatch2.GLOBSTAR = {};
     var expand = require_brace_expansion();
     var plTypes = {
@@ -52166,8 +52166,8 @@ var require_minimatch = __commonJS({
       assertValidPattern(pattern);
       if (!options) options = {};
       pattern = pattern.trim();
-      if (!options.allowWindowsEscape && path12.sep !== "/") {
-        pattern = pattern.split(path12.sep).join("/");
+      if (!options.allowWindowsEscape && path13.sep !== "/") {
+        pattern = pattern.split(path13.sep).join("/");
       }
       this.options = options;
       this.maxGlobstarRecursion = options.maxGlobstarRecursion !== void 0 ? options.maxGlobstarRecursion : 200;
@@ -52538,8 +52538,8 @@ var require_minimatch = __commonJS({
       if (this.empty) return f5 === "";
       if (f5 === "/" && partial) return true;
       var options = this.options;
-      if (path12.sep !== "/") {
-        f5 = f5.split(path12.sep).join("/");
+      if (path13.sep !== "/") {
+        f5 = f5.split(path13.sep).join("/");
       }
       f5 = f5.split(slashSplit);
       this.debug(this.pattern, "split", f5);
@@ -55145,7 +55145,11 @@ var Inputs = {
   ArtifactBucket: "artifact-bucket",
   Direction: "direction",
   FolderName: "name",
-  Concurrency: "concurrency"
+  Concurrency: "concurrency",
+  ReportLinksFile: "report-links-file",
+  WebsiteUrl: "website-url",
+  ReportSummaryTitle: "report-summary-title",
+  ReportSummaryIntro: "report-summary-intro"
 };
 
 // src/input-helper.ts
@@ -55154,26 +55158,48 @@ function raiseError(errorMessage) {
 }
 function getInputs() {
   const name = getInput(Inputs.RunNumber).concat("-", getInput(Inputs.FolderName));
-  const path12 = getInput(Inputs.Path, { required: true });
+  const path13 = getInput(Inputs.Path, { required: true });
   const bucket = getInput(Inputs.ArtifactBucket) || // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   process.env.ARTIFACTS_S3_BUCKET || raiseError("no artifact-bucket supplied");
   const direction2 = getInput(Inputs.Direction);
   const ifNoFilesFound = getInput(Inputs.IfNoFilesFound);
   const noFileBehavior = ifNoFilesFound;
   const folderName = getInput(Inputs.FolderName);
+  const concurrencyStr = getInput(Inputs.Concurrency) || "8";
+  const concurrency = parseInt(concurrencyStr);
+  const reportLinksFile = getInput(Inputs.ReportLinksFile) || void 0;
+  const websiteUrl = getInput(Inputs.WebsiteUrl) || void 0;
+  const reportSummaryTitle = getInput(Inputs.ReportSummaryTitle) || void 0;
+  const reportSummaryIntro = getInput(Inputs.ReportSummaryIntro) || void 0;
   if (!noFileBehavior) {
     setFailed(
       `Unrecognized ${Inputs.IfNoFilesFound} input. Provided: ${ifNoFilesFound}. Available options: warn, error, ignore.`
     );
   }
+  if (isNaN(concurrency)) {
+    setFailed("Invalid concurrency");
+  }
   const inputs = {
     artifactName: name,
     artifactBucket: bucket,
-    searchPath: path12,
+    searchPath: path13,
     ifNoFilesFound: noFileBehavior,
     direction: direction2,
-    folderName
+    folderName,
+    concurrency
   };
+  if (reportLinksFile) {
+    inputs.reportLinksFile = reportLinksFile;
+  }
+  if (websiteUrl) {
+    inputs.websiteUrl = websiteUrl;
+  }
+  if (reportSummaryTitle) {
+    inputs.reportSummaryTitle = reportSummaryTitle;
+  }
+  if (reportSummaryIntro) {
+    inputs.reportSummaryIntro = reportSummaryIntro;
+  }
   const retentionDaysStr = getInput(Inputs.RetentionDays);
   if (retentionDaysStr) {
     inputs.retentionDays = parseInt(retentionDaysStr);
@@ -55390,17 +55416,17 @@ var invalidArtifactNameCharacters = new Map([
   ["\\", " Backslash \\"],
   ["/", " Forward slash /"]
 ]);
-function checkArtifactFilePath(path12) {
-  if (!path12) {
-    throw new Error(`Artifact path: ${path12}, is incorrectly provided`);
+function checkArtifactFilePath(path13) {
+  if (!path13) {
+    throw new Error(`Artifact path: ${path13}, is incorrectly provided`);
   }
   for (const [
     invalidCharacterKey,
     errorMessageForCharacter
   ] of invalidArtifactFilePathCharacters) {
-    if (path12.includes(invalidCharacterKey)) {
+    if (path13.includes(invalidCharacterKey)) {
       throw new Error(
-        `Artifact path is not valid: ${path12}. Contains the following character: ${errorMessageForCharacter}
+        `Artifact path is not valid: ${path13}. Contains the following character: ${errorMessageForCharacter}
           
 Invalid characters include: ${Array.from(
           invalidArtifactFilePathCharacters.values()
@@ -55507,14 +55533,133 @@ async function uploadArtifact(artifactName, filesToUpload, rootDirectory, option
   return result;
 }
 
+// src/report-summary.ts
+var import_promises2 = __toESM(require("node:fs/promises"), 1);
+var import_node_path = __toESM(require("node:path"), 1);
+var DEFAULT_REPORT_SUMMARY_TITLE = "Published Reports";
+var ARTIFACT_PREFIX = "ci-pipeline-upload-artifacts";
+function parseReportLinks(content) {
+  return content.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean).flatMap((line) => {
+    const separatorIndex = line.indexOf("	");
+    if (separatorIndex === -1) {
+      return [];
+    }
+    const label = line.slice(0, separatorIndex).trim();
+    const target = line.slice(separatorIndex + 1).trim();
+    if (!label || !target) {
+      return [];
+    }
+    return [{ label, target }];
+  });
+}
+function resolvePublishedReportLink(link, options) {
+  const absoluteUrl = normalizeAbsoluteUrl(link.target);
+  if (absoluteUrl) {
+    return {
+      label: link.label,
+      url: absoluteUrl
+    };
+  }
+  if (!options.websiteUrl) {
+    return null;
+  }
+  const relativePath = normalizeRelativeReportPath(link.target);
+  if (!relativePath) {
+    return null;
+  }
+  return {
+    label: link.label,
+    url: buildArtifactWebsiteUrl(
+      options.websiteUrl,
+      options.folderName,
+      options.artifactName,
+      relativePath
+    )
+  };
+}
+function buildPublishedReportSummaryMarkdown(links, title = DEFAULT_REPORT_SUMMARY_TITLE, intro) {
+  const lines = [`### ${title.trim() || DEFAULT_REPORT_SUMMARY_TITLE}`, ""];
+  const trimmedIntro = intro?.trim();
+  if (trimmedIntro) {
+    lines.push(trimmedIntro, "");
+  }
+  lines.push(...links.map(({ label, url }) => `- [${label}](${url})`), "");
+  return lines.join("\n");
+}
+async function appendPublishedReportSummary(options) {
+  if (!process.env.GITHUB_STEP_SUMMARY) {
+    return;
+  }
+  let reportLinksContent;
+  try {
+    reportLinksContent = await import_promises2.default.readFile(options.reportLinksFile, "utf8");
+  } catch {
+    warning(
+      `Could not read report links file '${options.reportLinksFile}'. Skipping published report summary.`
+    );
+    return;
+  }
+  const reportLinks = parseReportLinks(reportLinksContent);
+  if (reportLinks.length === 0) {
+    return;
+  }
+  const publishedLinks = reportLinks.flatMap((link) => {
+    const resolvedLink = resolvePublishedReportLink(link, options);
+    if (resolvedLink) {
+      return [resolvedLink];
+    }
+    warning(
+      `Skipping published report link '${link.label}' because it is not an absolute URL and could not be resolved with website-url.`
+    );
+    return [];
+  });
+  if (publishedLinks.length === 0) {
+    return;
+  }
+  const markdown = buildPublishedReportSummaryMarkdown(
+    publishedLinks,
+    options.reportSummaryTitle,
+    options.reportSummaryIntro
+  );
+  summary.addRaw(markdown, true);
+  await summary.write({ overwrite: false });
+}
+function normalizeAbsoluteUrl(value) {
+  try {
+    return new URL(value).toString();
+  } catch {
+    return null;
+  }
+}
+function normalizeRelativeReportPath(reportPath) {
+  const slashNormalizedPath = reportPath.trim().replaceAll("\\", "/");
+  if (!slashNormalizedPath) {
+    return null;
+  }
+  const normalizedPath = import_node_path.default.posix.normalize(slashNormalizedPath).replace(/^\/+/u, "");
+  if (!normalizedPath || normalizedPath === "." || normalizedPath === ".." || normalizedPath.startsWith("../")) {
+    return null;
+  }
+  return normalizedPath;
+}
+function buildArtifactWebsiteUrl(websiteUrl, folderName, artifactName, reportPath) {
+  const url = new URL(websiteUrl);
+  url.search = "";
+  url.hash = "";
+  const baseSegments = url.pathname.split("/").filter(Boolean);
+  const reportSegments = reportPath.split("/").filter(Boolean);
+  url.pathname = `/${[...baseSegments, ARTIFACT_PREFIX, folderName, artifactName, ...reportSegments].map((segment) => encodeURIComponent(segment)).join("/")}`;
+  return url.toString();
+}
+
 // src/search.ts
 var import_fs2 = require("fs");
-var path11 = __toESM(require("path"), 1);
+var path12 = __toESM(require("path"), 1);
 var import_path2 = require("path");
 var import_util = require("util");
 
 // node_modules/@actions/glob/lib/internal-globber.js
-var fs7 = __toESM(require("fs"), 1);
+var fs8 = __toESM(require("fs"), 1);
 
 // node_modules/@actions/glob/lib/internal-glob-options-helper.js
 function getOptions(copy) {
@@ -55551,10 +55696,10 @@ function getOptions(copy) {
 }
 
 // node_modules/@actions/glob/lib/internal-globber.js
-var path10 = __toESM(require("path"), 1);
+var path11 = __toESM(require("path"), 1);
 
 // node_modules/@actions/glob/lib/internal-path-helper.js
-var path7 = __toESM(require("path"), 1);
+var path8 = __toESM(require("path"), 1);
 var import_assert = __toESM(require("assert"), 1);
 var IS_WINDOWS3 = process.platform === "win32";
 function dirname5(p5) {
@@ -55562,7 +55707,7 @@ function dirname5(p5) {
   if (IS_WINDOWS3 && /^\\\\[^\\]+(\\[^\\]+)?$/.test(p5)) {
     return p5;
   }
-  let result = path7.dirname(p5);
+  let result = path8.dirname(p5);
   if (IS_WINDOWS3 && /^\\\\[^\\]+\\[^\\]+\\$/.test(result)) {
     result = safeTrimTrailingSeparator(result);
   }
@@ -55599,7 +55744,7 @@ function ensureAbsoluteRoot(root, itemPath) {
   (0, import_assert.default)(hasAbsoluteRoot(root), `ensureAbsoluteRoot parameter 'root' must have an absolute root`);
   if (root.endsWith("/") || IS_WINDOWS3 && root.endsWith("\\")) {
   } else {
-    root += path7.sep;
+    root += path8.sep;
   }
   return root + itemPath;
 }
@@ -55633,10 +55778,10 @@ function safeTrimTrailingSeparator(p5) {
     return "";
   }
   p5 = normalizeSeparators2(p5);
-  if (!p5.endsWith(path7.sep)) {
+  if (!p5.endsWith(path8.sep)) {
     return p5;
   }
-  if (p5 === path7.sep) {
+  if (p5 === path8.sep) {
     return p5;
   }
   if (IS_WINDOWS3 && /^[A-Z]:\\$/i.test(p5)) {
@@ -55704,12 +55849,12 @@ function partialMatch(patterns, itemPath) {
 
 // node_modules/@actions/glob/lib/internal-pattern.js
 var os6 = __toESM(require("os"), 1);
-var path9 = __toESM(require("path"), 1);
+var path10 = __toESM(require("path"), 1);
 var import_assert3 = __toESM(require("assert"), 1);
 var import_minimatch = __toESM(require_minimatch(), 1);
 
 // node_modules/@actions/glob/lib/internal-path.js
-var path8 = __toESM(require("path"), 1);
+var path9 = __toESM(require("path"), 1);
 var import_assert2 = __toESM(require("assert"), 1);
 var IS_WINDOWS5 = process.platform === "win32";
 var Path = class {
@@ -55723,12 +55868,12 @@ var Path = class {
       (0, import_assert2.default)(itemPath, `Parameter 'itemPath' must not be empty`);
       itemPath = safeTrimTrailingSeparator(itemPath);
       if (!hasRoot(itemPath)) {
-        this.segments = itemPath.split(path8.sep);
+        this.segments = itemPath.split(path9.sep);
       } else {
         let remaining = itemPath;
         let dir = dirname5(remaining);
         while (dir !== remaining) {
-          const basename5 = path8.basename(remaining);
+          const basename5 = path9.basename(remaining);
           this.segments.unshift(basename5);
           remaining = dir;
           dir = dirname5(remaining);
@@ -55746,7 +55891,7 @@ var Path = class {
           (0, import_assert2.default)(segment === dirname5(segment), `Parameter 'itemPath' root segment contains information for multiple segments`);
           this.segments.push(segment);
         } else {
-          (0, import_assert2.default)(!segment.includes(path8.sep), `Parameter 'itemPath' contains unexpected path separators`);
+          (0, import_assert2.default)(!segment.includes(path9.sep), `Parameter 'itemPath' contains unexpected path separators`);
           this.segments.push(segment);
         }
       }
@@ -55757,12 +55902,12 @@ var Path = class {
    */
   toString() {
     let result = this.segments[0];
-    let skipSlash = result.endsWith(path8.sep) || IS_WINDOWS5 && /^[A-Z]:$/i.test(result);
+    let skipSlash = result.endsWith(path9.sep) || IS_WINDOWS5 && /^[A-Z]:$/i.test(result);
     for (let i5 = 1; i5 < this.segments.length; i5++) {
       if (skipSlash) {
         skipSlash = false;
       } else {
-        result += path8.sep;
+        result += path9.sep;
       }
       result += this.segments[i5];
     }
@@ -55795,7 +55940,7 @@ var Pattern = class _Pattern {
     }
     pattern = _Pattern.fixupPattern(pattern, homedir2);
     this.segments = new Path(pattern).segments;
-    this.trailingSeparator = normalizeSeparators2(pattern).endsWith(path9.sep);
+    this.trailingSeparator = normalizeSeparators2(pattern).endsWith(path10.sep);
     pattern = safeTrimTrailingSeparator(pattern);
     let foundGlob = false;
     const searchSegments = this.segments.map((x5) => _Pattern.getLiteral(x5)).filter((x5) => !foundGlob && !(foundGlob = x5 === ""));
@@ -55819,8 +55964,8 @@ var Pattern = class _Pattern {
   match(itemPath) {
     if (this.segments[this.segments.length - 1] === "**") {
       itemPath = normalizeSeparators2(itemPath);
-      if (!itemPath.endsWith(path9.sep) && this.isImplicitPattern === false) {
-        itemPath = `${itemPath}${path9.sep}`;
+      if (!itemPath.endsWith(path10.sep) && this.isImplicitPattern === false) {
+        itemPath = `${itemPath}${path10.sep}`;
       }
     } else {
       itemPath = safeTrimTrailingSeparator(itemPath);
@@ -55855,9 +56000,9 @@ var Pattern = class _Pattern {
     (0, import_assert3.default)(literalSegments.every((x5, i5) => (x5 !== "." || i5 === 0) && x5 !== ".."), `Invalid pattern '${pattern}'. Relative pathing '.' and '..' is not allowed.`);
     (0, import_assert3.default)(!hasRoot(pattern) || literalSegments[0], `Invalid pattern '${pattern}'. Root segment must not contain globs.`);
     pattern = normalizeSeparators2(pattern);
-    if (pattern === "." || pattern.startsWith(`.${path9.sep}`)) {
+    if (pattern === "." || pattern.startsWith(`.${path10.sep}`)) {
       pattern = _Pattern.globEscape(process.cwd()) + pattern.substr(1);
-    } else if (pattern === "~" || pattern.startsWith(`~${path9.sep}`)) {
+    } else if (pattern === "~" || pattern.startsWith(`~${path10.sep}`)) {
       homedir2 = homedir2 || os6.homedir();
       (0, import_assert3.default)(homedir2, "Unable to determine HOME directory");
       (0, import_assert3.default)(hasAbsoluteRoot(homedir2), `Expected HOME directory to be a rooted path. Actual '${homedir2}'`);
@@ -55933,8 +56078,8 @@ var Pattern = class _Pattern {
 
 // node_modules/@actions/glob/lib/internal-search-state.js
 var SearchState = class {
-  constructor(path12, level) {
-    this.path = path12;
+  constructor(path13, level) {
+    this.path = path13;
     this.level = level;
   }
 };
@@ -56077,7 +56222,7 @@ var DefaultGlobber = class _DefaultGlobber {
       for (const searchPath of getSearchPaths(patterns)) {
         debug(`Search path '${searchPath}'`);
         try {
-          yield __await2(fs7.promises.lstat(searchPath));
+          yield __await2(fs8.promises.lstat(searchPath));
         } catch (err) {
           if (err.code === "ENOENT") {
             continue;
@@ -56101,7 +56246,7 @@ var DefaultGlobber = class _DefaultGlobber {
         if (!stats2) {
           continue;
         }
-        if (options.excludeHiddenFiles && path10.basename(item.path).match(/^\./)) {
+        if (options.excludeHiddenFiles && path11.basename(item.path).match(/^\./)) {
           continue;
         }
         if (stats2.isDirectory()) {
@@ -56111,7 +56256,7 @@ var DefaultGlobber = class _DefaultGlobber {
             continue;
           }
           const childLevel = item.level + 1;
-          const childItems = (yield __await2(fs7.promises.readdir(item.path))).map((x5) => new SearchState(path10.join(item.path, x5), childLevel));
+          const childItems = (yield __await2(fs8.promises.readdir(item.path))).map((x5) => new SearchState(path11.join(item.path, x5), childLevel));
           stack.push(...childItems.reverse());
         } else if (match2 & MatchKind.File) {
           yield yield __await2(item.path);
@@ -56146,7 +56291,7 @@ var DefaultGlobber = class _DefaultGlobber {
       let stats2;
       if (options.followSymbolicLinks) {
         try {
-          stats2 = yield fs7.promises.stat(item.path);
+          stats2 = yield fs8.promises.stat(item.path);
         } catch (err) {
           if (err.code === "ENOENT") {
             if (options.omitBrokenSymbolicLinks) {
@@ -56158,10 +56303,10 @@ var DefaultGlobber = class _DefaultGlobber {
           throw err;
         }
       } else {
-        stats2 = yield fs7.promises.lstat(item.path);
+        stats2 = yield fs8.promises.lstat(item.path);
       }
       if (stats2.isDirectory() && options.followSymbolicLinks) {
-        const realPath = yield fs7.promises.realpath(item.path);
+        const realPath = yield fs8.promises.realpath(item.path);
         while (traversalChain.length >= item.level) {
           traversalChain.pop();
         }
@@ -56228,12 +56373,12 @@ function getMultiPathLCA(searchPaths) {
   let smallestPathLength = Number.MAX_SAFE_INTEGER;
   for (const searchPath of searchPaths) {
     debug(`Using search path ${searchPath}`);
-    const splitSearchPath = path11.normalize(searchPath).split(path11.sep);
+    const splitSearchPath = path12.normalize(searchPath).split(path12.sep);
     smallestPathLength = Math.min(smallestPathLength, splitSearchPath.length);
     splitPaths.push(splitSearchPath);
   }
-  if (searchPaths[0].startsWith(path11.sep)) {
-    commonPaths.push(path11.sep);
+  if (searchPaths[0].startsWith(path12.sep)) {
+    commonPaths.push(path12.sep);
   }
   let splitIndex = 0;
   function isPathTheSame() {
@@ -56252,7 +56397,7 @@ function getMultiPathLCA(searchPaths) {
     commonPaths.push(splitPaths[0][splitIndex]);
     splitIndex++;
   }
-  return path11.join(...commonPaths);
+  return path12.join(...commonPaths);
 }
 async function findFilesToUpload(searchPath, globOptions) {
   const searchResults = [];
@@ -56359,6 +56504,16 @@ async function runUpload() {
         inputs.folderName,
         inputs.concurrency
       );
+      if (inputs.reportLinksFile) {
+        await appendPublishedReportSummary({
+          artifactName: inputs.artifactName,
+          folderName: inputs.folderName,
+          reportLinksFile: inputs.reportLinksFile,
+          reportSummaryIntro: inputs.reportSummaryIntro,
+          reportSummaryTitle: inputs.reportSummaryTitle,
+          websiteUrl: inputs.websiteUrl
+        });
+      }
     }
   } catch (error3) {
     setFailed(error3.message);

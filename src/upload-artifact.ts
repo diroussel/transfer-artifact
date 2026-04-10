@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 
 import { uploadArtifact } from './aws/uploader.ts';
 import { getInputs } from './input-helper.ts';
+import { appendPublishedReportSummary } from './report-summary.ts';
 import { findFilesToUpload } from './search.ts';
 import type { UploadOptions } from './upload-options.ts';
 
@@ -63,6 +64,17 @@ export async function runUpload(): Promise<void> {
         inputs.folderName,
         inputs.concurrency
       );
+
+      if (inputs.reportLinksFile) {
+        await appendPublishedReportSummary({
+          artifactName: inputs.artifactName,
+          folderName: inputs.folderName,
+          reportLinksFile: inputs.reportLinksFile,
+          reportSummaryIntro: inputs.reportSummaryIntro,
+          reportSummaryTitle: inputs.reportSummaryTitle,
+          websiteUrl: inputs.websiteUrl,
+        });
+      }
     }
   } catch (error) {
     core.setFailed((error as Error).message);
