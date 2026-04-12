@@ -19,7 +19,7 @@ steps:
 
   - run: echo hello > path/to/artifact/world.txt
 
-  - uses: NHSDigital/transfer-artifact@s3
+  - uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:
@@ -31,7 +31,7 @@ steps:
 ### Upload an Entire Directory
 
 ```yaml
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -43,7 +43,7 @@ steps:
 ### Upload using a Wildcard Pattern
 
 ```yaml
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -55,7 +55,7 @@ steps:
 ### Upload using Multiple Paths and Exclusions
 
 ```yaml
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -94,7 +94,7 @@ The [@actions/artifact](https://github.com/actions/toolkit/tree/main/packages/ar
 If a path (or paths), result in no files being found for the artifact, the action will succeed but print out a warning. In certain scenarios it may be desirable to fail the action or suppress the warning. The `if-no-files-found` option allows you to customize the behavior of the action if no files are found:
 
 ```yaml
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -109,7 +109,7 @@ If a path (or paths), result in no files being found for the artifact, the actio
 To upload artifacts only when the previous step of a job failed, use [`if: failure()`](https://help.github.com/en/articles/contexts-and-expression-syntax-for-github-actions#job-status-check-functions):
 
 ```yaml
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   if: failure()
@@ -124,7 +124,7 @@ To upload artifacts only when the previous step of a job failed, use [`if: failu
 You can upload an artifact without specifying a name
 
 ```yaml
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -141,7 +141,7 @@ With the following example, the available artifact (named `artifact` by default 
 
 ```yaml
 - run: echo hi > world.txt
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -150,7 +150,7 @@ With the following example, the available artifact (named `artifact` by default 
     direction: 'upload'
 
 - run: echo howdy > extra-file.txt
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -159,7 +159,7 @@ With the following example, the available artifact (named `artifact` by default 
     direction: 'upload'
 
 - run: echo hello > world.txt
-- uses: NHSDigital/transfer-artifact@s3
+- uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -178,7 +178,7 @@ steps:
   - name: Create a file
     run: echo ${{ github.run_number }} > my_file.txt
   - name: Accidentally upload to the same artifact via multiple jobs
-    uses: NHSDigital/transfer-artifact@s3
+    uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:
@@ -192,7 +192,7 @@ steps:
 In the above example, four jobs will upload four different files to the same artifact but there will only be one file available when `my-artifact` is downloaded. Each job overwrites what was previously uploaded. To ensure that jobs don't overwrite existing artifacts, use a different name per job:
 
 ```yaml
-uses: NHSDigital/transfer-artifact@s3
+uses: NHSDigital/transfer-artifact@v5
 env:
   bucket: abcd-123456789-eu-west-2-my-S3-bucket
 with:
@@ -205,16 +205,19 @@ with:
 
 If your uploaded files are also available from a public website, you can add report links to the GitHub Actions job summary.
 
-Create a TSV file where each line is:
+Pass a multiline `report-links` input where each line is:
 
 ```text
-label<TAB>path-or-url
+link-name:link-path:link-text
 ```
 
-The second column can be either:
+The values mean:
 
-- an artifact-relative path such as `coverage/index.html`
-- an absolute URL such as `https://reports.example.com/coverage/index.html`
+- `link-name`: the clickable markdown link label
+- `link-path`: a folder path relative to the `path` input
+- `link-text`: plain text shown after the link on the same bullet item
+
+The action assumes there is an `index.html` file inside each `<path>/<link-path>` folder.
 
 Example:
 
@@ -222,32 +225,36 @@ Example:
 steps:
   - name: Create reports
     run: |
-      mkdir -p coverage
-      echo '<html><body>coverage</body></html>' > coverage/index.html
-      printf 'Coverage Report\tcoverage/index.html\n' > "$RUNNER_TEMP/report-links.tsv"
+      mkdir -p published-reports/coverage
+      mkdir -p published-reports/unit-tests
+      echo '<html><body>coverage</body></html>' > published-reports/coverage/index.html
+      echo '<html><body>tests</body></html>' > published-reports/unit-tests/index.html
 
   - name: Upload reports
-    uses: NHSDigital/transfer-artifact@s3
+    uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:
       name: my-folder
       direction: 'upload'
-      path: coverage
-      report-links-file: ${{ runner.temp }}/report-links.tsv
+      path: toplevel/subfolder
+      report-links: |
+        Coverage Report:target/reports/unit/coverage:HTML coverage report
+        Unit Test Results:unit-tests:Detailed unit test report
       website-url: https://reports.example.com
-      report-summary-title: Coverage Reports
-      report-summary-intro: Published coverage reports for this run.
+      report-summary-title: Test Reports
+      report-summary-intro: Published test and test coverage reports for this run.
 ```
 
 With the example above, the job summary will include a section like:
 
 ```md
-### Coverage Reports
+### Test Reports
 
-Published coverage reports for this run.
+Published test and test coverage reports for this run.
 
-- [Coverage Report](https://reports.example.com/ci-pipeline-upload-artifacts/my-folder/${{ github.run_number }}-my-folder/coverage/index.html)
+- [Coverage Report](https://reports.example.com/ci-pipeline-upload-artifacts/my-folder/${{ github.run_number }}-my-folder/coverage/index.html) HTML coverage report
+- [Unit Test Results](https://reports.example.com/ci-pipeline-upload-artifacts/my-folder/${{ github.run_number }}-my-folder/unit-tests/index.html) Detailed unit test report
 ```
 
 ### Environment Variables and Tilde Expansion
@@ -258,7 +265,7 @@ You can use `~` in the path input as a substitute for `$HOME`. Basic tilde expan
   - run: |
       mkdir -p ~/new/artifact
       echo hello > ~/new/artifact/world.txt
-  - uses: NHSDigital/transfer-artifact@s3
+  - uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:
@@ -275,7 +282,7 @@ steps:
   - run: |
       mkdir -p ${{ github.workspace }}/artifact
       echo hello > ${{ github.workspace }}/artifact/world.txt
-  - uses: NHSDigital/transfer-artifact@s3
+  - uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:
@@ -292,7 +299,7 @@ For environment variables created in other steps, make sure to use the `env` exp
         mkdir testing
         echo "This is a file to upload" > testing/file.txt
         echo "artifactPath=testing/file.txt" >> $GITHUB_ENV
-    - uses: NHSDigital/transfer-artifact@s3
+    - uses: NHSDigital/transfer-artifact@v5
       env:
         bucket: abcd-123456789-eu-west-2-my-S3-bucket
       with:
@@ -311,7 +318,7 @@ Artifacts are retained for 90 days by default. You can specify a shorter retenti
   run: echo "I won't live long" > my_file.txt
 
 - name: Upload Artifact
-  uses: NHSDigital/transfer-artifact@s3
+  uses: NHSDigital/transfer-artifact@v5
   env:
     bucket: abcd-123456789-eu-west-2-my-S3-bucket
   with:
@@ -333,7 +340,7 @@ Artifacts are uploaded to the specified S3 bucket, into a folder called `folder-
 steps:
   - uses: actions/checkout@v3
 
-  - uses: NHSDigital/transfer-artifact@s3
+  - uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:
@@ -350,7 +357,7 @@ This will download every object in the S3 bucket which matches the `my-folder/my
 steps:
   - uses: actions/checkout@v3
 
-  - uses: NHSDigital/transfer-artifact@s3
+  - uses: NHSDigital/transfer-artifact@v5
     env:
       bucket: abcd-123456789-eu-west-2-my-S3-bucket
     with:

@@ -14,7 +14,6 @@ import {
 
 import type * as ReportSummaryModule from '../src/report-summary.ts';
 
-const mockWarning = jest.fn<(message: string) => void>();
 const mockSummary = {
   addRaw: jest.fn<(text: string, addEOL?: boolean) => typeof mockSummary>(),
   write: jest.fn<(options?: { overwrite?: boolean }) => Promise<void>>(),
@@ -25,20 +24,19 @@ mockSummary.write.mockResolvedValue(undefined);
 
 jest.unstable_mockModule('@actions/core', () => ({
   summary: mockSummary,
-  warning: mockWarning,
 }));
 
 let appendPublishedReportSummary: typeof ReportSummaryModule.appendPublishedReportSummary;
 let buildPublishedReportSummaryMarkdown: typeof ReportSummaryModule.buildPublishedReportSummaryMarkdown;
+let createPublishedReportSummaryMarkdown: typeof ReportSummaryModule.createPublishedReportSummaryMarkdown;
 let parseReportLinks: typeof ReportSummaryModule.parseReportLinks;
-let resolvePublishedReportLink: typeof ReportSummaryModule.resolvePublishedReportLink;
 
 beforeAll(async () => {
   ({
     appendPublishedReportSummary,
     buildPublishedReportSummaryMarkdown,
+    createPublishedReportSummaryMarkdown,
     parseReportLinks,
-    resolvePublishedReportLink,
   } = await import('../src/report-summary.ts'));
 });
 
@@ -54,104 +52,172 @@ describe('report-summary', () => {
     process.env = originalEnv;
   });
 
-  it('parses valid TSV rows and skips malformed lines', () => {
+  it('parses colon-separated report definitions and allows colons in link text', () => {
     expect(
-      parseReportLinks(
-        [
-          'HTML Report\tcoverage/index.html',
-          '',
-          'missing-tab',
-          ' \tmissing-label',
-          'Coverage JSON\thttps://example.com/report.json',
-        ].join('\n')
-      )
+      parseReportLinks([
+        'Coverage Report:coverage:HTML coverage report',
+        'Unit Tests:unit-tests:Detailed results: with extra detail',
+      ])
     ).toStrictEqual([
-      { label: 'HTML Report', target: 'coverage/index.html' },
       {
-        label: 'Coverage JSON',
-        target: 'https://example.com/report.json',
+        name: 'Coverage Report',
+        path: 'coverage',
+        text: 'HTML coverage report',
+      },
+      {
+        name: 'Unit Tests',
+        path: 'unit-tests',
+        text: 'Detailed results: with extra detail',
       },
     ]);
   });
 
-  it('resolves artifact-relative paths against the public website URL', () => {
-    expect(
-      resolvePublishedReportLink(
-        { label: 'Coverage Report', target: './coverage results/index.html' },
-        {
-          artifactName: '123-upload-artifacts',
-          folderName: 'upload-artifacts',
-          websiteUrl: 'https://reports.example.com/base/',
-        }
-      )
-    ).toStrictEqual({
-      label: 'Coverage Report',
-      url: 'https://reports.example.com/base/ci-pipeline-upload-artifacts/upload-artifacts/123-upload-artifacts/coverage%20results/index.html',
-    });
-  });
-
-  it('renders markdown with a title, intro, and links', () => {
+  it('renders markdown with link text on each bullet', () => {
     expect(
       buildPublishedReportSummaryMarkdown(
         [
           {
-            label: 'HTML Report',
-            url: 'https://reports.example.com/html/index.html',
+            name: 'Coverage Report',
+            text: 'HTML coverage report',
+            url: 'https://reports.example.com/coverage/index.html',
           },
         ],
-        'UI Test Reports',
+        'Coverage Reports',
         'Published report links'
       )
     ).toBe(
       [
-        '### UI Test Reports',
+        '### Coverage Reports',
         '',
         'Published report links',
         '',
-        '- [HTML Report](https://reports.example.com/html/index.html)',
+        '- [Coverage Report](https://reports.example.com/coverage/index.html) HTML coverage report',
         '',
       ].join('\n')
     );
   });
 
-  it('appends a published report summary and warns for unresolved rows', async () => {
-    process.env.GITHUB_STEP_SUMMARY = '/tmp/summary.md';
-
+  it('creates markdown from multiline report-links definitions', async () => {
     const tempDirectory = await fs.mkdtemp(
       path.join(os.tmpdir(), 'transfer-artifact-report-summary-')
     );
-    const reportLinksFile = path.join(tempDirectory, 'report-links.tsv');
+    await fs.mkdir(path.join(tempDirectory, 'coverage'), { recursive: true });
+    await fs.mkdir(path.join(tempDirectory, 'unit-tests'), { recursive: true });
     await fs.writeFile(
-      reportLinksFile,
-      [
-        'HTML Report\tcoverage/index.html',
-        'Absolute URL\thttps://reports.example.com/external/index.html',
-        'Invalid Relative\t../secret/index.html',
-      ].join('\n')
+      path.join(tempDirectory, 'coverage', 'index.html'),
+      'ok'
+    );
+    await fs.writeFile(
+      path.join(tempDirectory, 'unit-tests', 'index.html'),
+      'ok'
     );
 
-    await appendPublishedReportSummary({
-      artifactName: '123-upload-artifacts',
-      folderName: 'upload-artifacts',
-      reportLinksFile,
-      reportSummaryIntro: 'Published report links',
-      reportSummaryTitle: 'UI Test Reports',
-      websiteUrl: 'https://reports.example.com/root',
-    });
-
-    expect(mockWarning).toHaveBeenCalledWith(
-      "Skipping published report link 'Invalid Relative' because it is not an absolute URL and could not be resolved with website-url."
-    );
-    expect(mockSummary.addRaw).toHaveBeenCalledWith(
+    await expect(
+      createPublishedReportSummaryMarkdown({
+        artifactName: '123-upload-artifacts',
+        folderName: 'upload-artifacts',
+        reportLinks: [
+          'Coverage Report:coverage:HTML coverage report',
+          'Unit Tests:unit-tests:Detailed unit test report',
+        ],
+        reportSummaryIntro: 'Published report links',
+        reportSummaryTitle: 'UI Test Reports',
+        searchPath: tempDirectory,
+        websiteUrl: 'https://reports.example.com/base',
+      })
+    ).resolves.toBe(
       [
         '### UI Test Reports',
         '',
         'Published report links',
         '',
-        '- [HTML Report](https://reports.example.com/root/ci-pipeline-upload-artifacts/upload-artifacts/123-upload-artifacts/coverage/index.html)',
-        '- [Absolute URL](https://reports.example.com/external/index.html)',
+        '- [Coverage Report](https://reports.example.com/base/ci-pipeline-upload-artifacts/upload-artifacts/123-upload-artifacts/coverage/index.html) HTML coverage report',
+        '- [Unit Tests](https://reports.example.com/base/ci-pipeline-upload-artifacts/upload-artifacts/123-upload-artifacts/unit-tests/index.html) Detailed unit test report',
         '',
-      ].join('\n'),
+      ].join('\n')
+    );
+  });
+
+  it('rejects report links that traverse outside the upload directory', async () => {
+    const tempDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'transfer-artifact-report-summary-')
+    );
+
+    await expect(
+      createPublishedReportSummaryMarkdown({
+        artifactName: '123-upload-artifacts',
+        folderName: 'upload-artifacts',
+        reportLinks: ['Coverage Report:../coverage:HTML coverage report'],
+        searchPath: tempDirectory,
+        websiteUrl: 'https://reports.example.com/base',
+      })
+    ).rejects.toThrow(
+      "Invalid report link path '../coverage'. Paths must stay within the uploaded directory."
+    );
+  });
+
+  it('rejects multiline or non-directory path inputs when report-links are enabled', async () => {
+    await expect(
+      createPublishedReportSummaryMarkdown({
+        artifactName: '123-upload-artifacts',
+        folderName: 'upload-artifacts',
+        reportLinks: ['Coverage Report:coverage:HTML coverage report'],
+        searchPath: 'coverage\nreports',
+        websiteUrl: 'https://reports.example.com/base',
+      })
+    ).rejects.toThrow(
+      "report-links requires 'path' to be a single concrete directory. Received multiline path input: coverage\nreports"
+    );
+
+    const tempDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'transfer-artifact-report-summary-')
+    );
+    const singleFilePath = path.join(tempDirectory, 'index.html');
+    await fs.writeFile(singleFilePath, 'ok');
+
+    await expect(
+      createPublishedReportSummaryMarkdown({
+        artifactName: '123-upload-artifacts',
+        folderName: 'upload-artifacts',
+        reportLinks: ['Coverage Report:coverage:HTML coverage report'],
+        searchPath: singleFilePath,
+        websiteUrl: 'https://reports.example.com/base',
+      })
+    ).rejects.toThrow(
+      `report-links requires 'path' to be a directory. Received: ${singleFilePath}`
+    );
+  });
+
+  it('requires an index.html inside each report folder', async () => {
+    const tempDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'transfer-artifact-report-summary-')
+    );
+    await fs.mkdir(path.join(tempDirectory, 'coverage'), { recursive: true });
+
+    await expect(
+      createPublishedReportSummaryMarkdown({
+        artifactName: '123-upload-artifacts',
+        folderName: 'upload-artifacts',
+        reportLinks: ['Coverage Report:coverage:HTML coverage report'],
+        searchPath: tempDirectory,
+        websiteUrl: 'https://reports.example.com/base',
+      })
+    ).rejects.toThrow(
+      `Report entry 'Coverage Report' expects an index.html at '${path.join(
+        tempDirectory,
+        'coverage',
+        'index.html'
+      )}'`
+    );
+  });
+
+  it('appends markdown to the GitHub step summary when available', async () => {
+    process.env.GITHUB_STEP_SUMMARY = '/tmp/summary.md';
+
+    await appendPublishedReportSummary('### Published Reports\n');
+
+    expect(mockSummary.addRaw).toHaveBeenCalledWith(
+      '### Published Reports\n',
       true
     );
     expect(mockSummary.write).toHaveBeenCalledWith({ overwrite: false });

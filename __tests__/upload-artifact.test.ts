@@ -10,13 +10,13 @@ import {
 import type { UploadInputs } from '../src/upload-inputs.ts';
 
 const mockGetInputs = jest.fn<() => UploadInputs>();
-const mockFindFilesToUpload = jest.fn<
-  () => Promise<{ filesToUpload: string[]; rootDirectory: string }>
->();
+const mockFindFilesToUpload =
+  jest.fn<() => Promise<{ filesToUpload: string[]; rootDirectory: string }>>();
 const mockUploadArtifact = jest.fn<(...args: unknown[]) => Promise<void>>();
-const mockAppendPublishedReportSummary = jest.fn<
-  (...args: unknown[]) => Promise<void>
->();
+const mockCreatePublishedReportSummaryMarkdown =
+  jest.fn<(...args: unknown[]) => Promise<string | null>>();
+const mockAppendPublishedReportSummary =
+  jest.fn<(...args: unknown[]) => Promise<void>>();
 const mockInfo = jest.fn<(message: string) => void>();
 const mockWarning = jest.fn<(message: string) => void>();
 const mockDebug = jest.fn<(message: string) => void>();
@@ -42,6 +42,8 @@ jest.unstable_mockModule('../src/aws/uploader.ts', () => ({
 }));
 
 jest.unstable_mockModule('../src/report-summary.ts', () => ({
+  createPublishedReportSummaryMarkdown:
+    mockCreatePublishedReportSummaryMarkdown,
   appendPublishedReportSummary: mockAppendPublishedReportSummary,
 }));
 
@@ -68,6 +70,7 @@ describe('runUpload', () => {
       rootDirectory: '/tmp',
     });
     mockUploadArtifact.mockResolvedValue(undefined);
+    mockCreatePublishedReportSummaryMarkdown.mockResolvedValue(null);
     mockAppendPublishedReportSummary.mockResolvedValue(undefined);
   });
 
@@ -79,15 +82,27 @@ describe('runUpload', () => {
       direction: 'upload',
       folderName: 'test-folder',
       ifNoFilesFound: 'warn',
-      reportLinksFile: '/tmp/report-links.tsv',
+      reportLinks: ['Coverage Report:coverage:HTML coverage report'],
       reportSummaryIntro: 'Published report links',
       reportSummaryTitle: 'UI Test Reports',
       searchPath: '/tmp/reports',
       websiteUrl: 'https://reports.example.com',
     });
+    mockCreatePublishedReportSummaryMarkdown.mockResolvedValue(
+      '### UI Test Reports\n'
+    );
 
     await runUpload();
 
+    expect(mockCreatePublishedReportSummaryMarkdown).toHaveBeenCalledWith({
+      artifactName: '123-test-folder',
+      folderName: 'test-folder',
+      reportLinks: ['Coverage Report:coverage:HTML coverage report'],
+      reportSummaryIntro: 'Published report links',
+      reportSummaryTitle: 'UI Test Reports',
+      searchPath: '/tmp/reports',
+      websiteUrl: 'https://reports.example.com',
+    });
     expect(mockUploadArtifact).toHaveBeenCalledWith(
       '123-test-folder',
       ['/tmp/reports/index.html'],
@@ -97,20 +112,16 @@ describe('runUpload', () => {
       'test-folder',
       4
     );
-    expect(mockAppendPublishedReportSummary).toHaveBeenCalledWith({
-      artifactName: '123-test-folder',
-      folderName: 'test-folder',
-      reportLinksFile: '/tmp/report-links.tsv',
-      reportSummaryIntro: 'Published report links',
-      reportSummaryTitle: 'UI Test Reports',
-      websiteUrl: 'https://reports.example.com',
-    });
+    expect(mockAppendPublishedReportSummary).toHaveBeenCalledWith(
+      '### UI Test Reports\n'
+    );
   });
 
-  it('does not append a published report summary when no report links file is configured', async () => {
+  it('does not append a published report summary when no report links are configured', async () => {
     await runUpload();
 
     expect(mockUploadArtifact).toHaveBeenCalled();
+    expect(mockCreatePublishedReportSummaryMarkdown).not.toHaveBeenCalled();
     expect(mockAppendPublishedReportSummary).not.toHaveBeenCalled();
   });
 
@@ -124,6 +135,32 @@ describe('runUpload', () => {
 
     expect(mockWarning).toHaveBeenCalledWith(
       'No files were found with the provided path: /tmp/reports. No artifacts will be uploaded.'
+    );
+    expect(mockCreatePublishedReportSummaryMarkdown).not.toHaveBeenCalled();
+    expect(mockUploadArtifact).not.toHaveBeenCalled();
+    expect(mockAppendPublishedReportSummary).not.toHaveBeenCalled();
+  });
+
+  it('fails before uploading when report link validation fails', async () => {
+    mockGetInputs.mockReturnValue({
+      artifactBucket: 'test-bucket',
+      artifactName: '123-test-folder',
+      concurrency: 4,
+      direction: 'upload',
+      folderName: 'test-folder',
+      ifNoFilesFound: 'warn',
+      reportLinks: ['Coverage Report:coverage:HTML coverage report'],
+      searchPath: '/tmp/reports',
+      websiteUrl: 'https://reports.example.com',
+    });
+    mockCreatePublishedReportSummaryMarkdown.mockRejectedValue(
+      new Error('Invalid report-links configuration')
+    );
+
+    await runUpload();
+
+    expect(mockSetFailed).toHaveBeenCalledWith(
+      'Invalid report-links configuration'
     );
     expect(mockUploadArtifact).not.toHaveBeenCalled();
     expect(mockAppendPublishedReportSummary).not.toHaveBeenCalled();

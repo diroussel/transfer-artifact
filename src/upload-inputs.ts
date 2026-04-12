@@ -43,9 +43,9 @@ export interface UploadInputs {
   concurrency: number;
 
   /**
-   * Optional path to a report links TSV file
+   * Optional multiline list of published report definitions
    */
-  reportLinksFile?: string;
+  reportLinks?: string[];
 
   /**
    * Optional public website base URL for published reports

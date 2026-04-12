@@ -55146,7 +55146,7 @@ var Inputs = {
   Direction: "direction",
   FolderName: "name",
   Concurrency: "concurrency",
-  ReportLinksFile: "report-links-file",
+  ReportLinks: "report-links",
   WebsiteUrl: "website-url",
   ReportSummaryTitle: "report-summary-title",
   ReportSummaryIntro: "report-summary-intro"
@@ -55167,7 +55167,7 @@ function getInputs() {
   const folderName = getInput(Inputs.FolderName);
   const concurrencyStr = getInput(Inputs.Concurrency) || "8";
   const concurrency = parseInt(concurrencyStr);
-  const reportLinksFile = getInput(Inputs.ReportLinksFile) || void 0;
+  const reportLinks = getMultilineInput(Inputs.ReportLinks);
   const websiteUrl = getInput(Inputs.WebsiteUrl) || void 0;
   const reportSummaryTitle = getInput(Inputs.ReportSummaryTitle) || void 0;
   const reportSummaryIntro = getInput(Inputs.ReportSummaryIntro) || void 0;
@@ -55188,8 +55188,8 @@ function getInputs() {
     folderName,
     concurrency
   };
-  if (reportLinksFile) {
-    inputs.reportLinksFile = reportLinksFile;
+  if (reportLinks.length > 0) {
+    inputs.reportLinks = reportLinks;
   }
   if (websiteUrl) {
     inputs.websiteUrl = websiteUrl;
@@ -55538,44 +55538,81 @@ var import_promises2 = __toESM(require("node:fs/promises"), 1);
 var import_node_path = __toESM(require("node:path"), 1);
 var DEFAULT_REPORT_SUMMARY_TITLE = "Published Reports";
 var ARTIFACT_PREFIX = "ci-pipeline-upload-artifacts";
-function parseReportLinks(content) {
-  return content.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean).flatMap((line) => {
-    const separatorIndex = line.indexOf("	");
-    if (separatorIndex === -1) {
+function parseReportLinks(reportLinks) {
+  return reportLinks.flatMap((line) => {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
       return [];
     }
-    const label = line.slice(0, separatorIndex).trim();
-    const target = line.slice(separatorIndex + 1).trim();
-    if (!label || !target) {
-      return [];
+    const firstSeparatorIndex = trimmedLine.indexOf(":");
+    const secondSeparatorIndex = firstSeparatorIndex === -1 ? -1 : trimmedLine.indexOf(":", firstSeparatorIndex + 1);
+    if (firstSeparatorIndex === -1 || secondSeparatorIndex === -1) {
+      throw new Error(
+        `Invalid report-links entry '${line}'. Expected format: link-name:link-path:link-text`
+      );
     }
-    return [{ label, target }];
+    const name = trimmedLine.slice(0, firstSeparatorIndex).trim();
+    const reportPath = trimmedLine.slice(firstSeparatorIndex + 1, secondSeparatorIndex).trim();
+    const text = trimmedLine.slice(secondSeparatorIndex + 1).trim();
+    if (!name || !reportPath || !text) {
+      throw new Error(
+        `Invalid report-links entry '${line}'. Expected format: link-name:link-path:link-text`
+      );
+    }
+    return [{ name, path: reportPath, text }];
   });
 }
-function resolvePublishedReportLink(link, options) {
-  const absoluteUrl = normalizeAbsoluteUrl(link.target);
-  if (absoluteUrl) {
-    return {
-      label: link.label,
-      url: absoluteUrl
-    };
+async function createPublishedReportSummaryMarkdown(options) {
+  if (options.reportLinks.length === 0) {
+    return null;
   }
   if (!options.websiteUrl) {
+    throw new Error(
+      "website-url is required when report-links is provided"
+    );
+  }
+  const searchDirectory = await resolveReportSearchDirectory(options.searchPath);
+  const parsedReportLinks = parseReportLinks(options.reportLinks);
+  if (parsedReportLinks.length === 0) {
     return null;
   }
-  const relativePath = normalizeRelativeReportPath(link.target);
-  if (!relativePath) {
-    return null;
+  const publishedLinks = [];
+  for (const reportLink of parsedReportLinks) {
+    const normalizedReportPath = normalizeReportPath(reportLink.path);
+    const reportFilePath = import_node_path.default.join(
+      searchDirectory,
+      ...getLocalReportPathSegments(normalizedReportPath),
+      "index.html"
+    );
+    const reportFileExists = await fileExists(reportFilePath);
+    if (!reportFileExists) {
+      throw new Error(
+        `Report entry '${reportLink.name}' expects an index.html at '${reportFilePath}'`
+      );
+    }
+    publishedLinks.push({
+      name: reportLink.name,
+      text: reportLink.text,
+      url: buildArtifactWebsiteUrl(
+        options.websiteUrl,
+        options.folderName,
+        options.artifactName,
+        normalizedReportPath
+      )
+    });
   }
-  return {
-    label: link.label,
-    url: buildArtifactWebsiteUrl(
-      options.websiteUrl,
-      options.folderName,
-      options.artifactName,
-      relativePath
-    )
-  };
+  return buildPublishedReportSummaryMarkdown(
+    publishedLinks,
+    options.reportSummaryTitle,
+    options.reportSummaryIntro
+  );
+}
+async function appendPublishedReportSummary(markdown) {
+  if (!process.env.GITHUB_STEP_SUMMARY) {
+    return;
+  }
+  summary.addRaw(markdown, true);
+  await summary.write({ overwrite: false });
 }
 function buildPublishedReportSummaryMarkdown(links, title = DEFAULT_REPORT_SUMMARY_TITLE, intro) {
   const lines = [`### ${title.trim() || DEFAULT_REPORT_SUMMARY_TITLE}`, ""];
@@ -55583,73 +55620,74 @@ function buildPublishedReportSummaryMarkdown(links, title = DEFAULT_REPORT_SUMMA
   if (trimmedIntro) {
     lines.push(trimmedIntro, "");
   }
-  lines.push(...links.map(({ label, url }) => `- [${label}](${url})`), "");
+  lines.push(
+    ...links.map(({ name, text, url }) => `- [${name}](${url}) ${text}`),
+    ""
+  );
   return lines.join("\n");
 }
-async function appendPublishedReportSummary(options) {
-  if (!process.env.GITHUB_STEP_SUMMARY) {
-    return;
+async function resolveReportSearchDirectory(searchPath) {
+  if (searchPath.includes("\n")) {
+    throw new Error(
+      `report-links requires 'path' to be a single concrete directory. Received multiline path input: ${searchPath}`
+    );
   }
-  let reportLinksContent;
+  const resolvedSearchPath = import_node_path.default.resolve(searchPath);
+  let searchPathStats;
   try {
-    reportLinksContent = await import_promises2.default.readFile(options.reportLinksFile, "utf8");
+    searchPathStats = await import_promises2.default.stat(resolvedSearchPath);
   } catch {
-    warning(
-      `Could not read report links file '${options.reportLinksFile}'. Skipping published report summary.`
+    throw new Error(
+      `report-links requires 'path' to be a single concrete directory. Received: ${searchPath}`
     );
-    return;
   }
-  const reportLinks = parseReportLinks(reportLinksContent);
-  if (reportLinks.length === 0) {
-    return;
-  }
-  const publishedLinks = reportLinks.flatMap((link) => {
-    const resolvedLink = resolvePublishedReportLink(link, options);
-    if (resolvedLink) {
-      return [resolvedLink];
-    }
-    warning(
-      `Skipping published report link '${link.label}' because it is not an absolute URL and could not be resolved with website-url.`
+  if (!searchPathStats.isDirectory()) {
+    throw new Error(
+      `report-links requires 'path' to be a directory. Received: ${searchPath}`
     );
-    return [];
-  });
-  if (publishedLinks.length === 0) {
-    return;
   }
-  const markdown = buildPublishedReportSummaryMarkdown(
-    publishedLinks,
-    options.reportSummaryTitle,
-    options.reportSummaryIntro
+  return resolvedSearchPath;
+}
+function normalizeReportPath(reportPath) {
+  const normalizedPath = import_node_path.default.posix.normalize(
+    reportPath.trim().replaceAll("\\", "/")
   );
-  summary.addRaw(markdown, true);
-  await summary.write({ overwrite: false });
+  if (!normalizedPath || normalizedPath === "" || normalizedPath === "/") {
+    throw new Error(`Invalid report link path '${reportPath}'`);
+  }
+  if (normalizedPath === ".." || normalizedPath.startsWith("../") || normalizedPath.startsWith("/")) {
+    throw new Error(
+      `Invalid report link path '${reportPath}'. Paths must stay within the uploaded directory.`
+    );
+  }
+  return normalizedPath === "." ? "." : normalizedPath.replace(/^\.\/+/u, "");
 }
-function normalizeAbsoluteUrl(value) {
-  try {
-    return new URL(value).toString();
-  } catch {
-    return null;
-  }
-}
-function normalizeRelativeReportPath(reportPath) {
-  const slashNormalizedPath = reportPath.trim().replaceAll("\\", "/");
-  if (!slashNormalizedPath) {
-    return null;
-  }
-  const normalizedPath = import_node_path.default.posix.normalize(slashNormalizedPath).replace(/^\/+/u, "");
-  if (!normalizedPath || normalizedPath === "." || normalizedPath === ".." || normalizedPath.startsWith("../")) {
-    return null;
-  }
-  return normalizedPath;
+function getLocalReportPathSegments(reportPath) {
+  return reportPath === "." ? [] : reportPath.split("/").filter((segment) => segment.length > 0);
 }
 function buildArtifactWebsiteUrl(websiteUrl, folderName, artifactName, reportPath) {
   const url = new URL(websiteUrl);
   url.search = "";
   url.hash = "";
   const baseSegments = url.pathname.split("/").filter(Boolean);
-  const reportSegments = reportPath.split("/").filter(Boolean);
-  url.pathname = `/${[...baseSegments, ARTIFACT_PREFIX, folderName, artifactName, ...reportSegments].map((segment) => encodeURIComponent(segment)).join("/")}`;
+  const reportSegments = getLocalReportPathSegments(reportPath);
+  url.pathname = `/${[
+    ...baseSegments,
+    ARTIFACT_PREFIX,
+    folderName,
+    artifactName,
+    ...reportSegments,
+    "index.html"
+  ].map((segment) => encodeURIComponent(segment)).join("/")}`;
   return url.toString();
+}
+async function fileExists(filePath) {
+  try {
+    const fileStats = await import_promises2.default.stat(filePath);
+    return fileStats.isFile();
+  } catch {
+    return false;
+  }
 }
 
 // src/search.ts
@@ -56495,6 +56533,15 @@ async function runUpload() {
       info(
         `Trying to upload files into ${inputs.folderName}/${inputs.artifactName}...`
       );
+      const publishedReportSummary = inputs.reportLinks ? await createPublishedReportSummaryMarkdown({
+        artifactName: inputs.artifactName,
+        folderName: inputs.folderName,
+        reportLinks: inputs.reportLinks,
+        reportSummaryIntro: inputs.reportSummaryIntro,
+        reportSummaryTitle: inputs.reportSummaryTitle,
+        searchPath: inputs.searchPath,
+        websiteUrl: inputs.websiteUrl
+      }) : null;
       await uploadArtifact(
         inputs.artifactName,
         searchResult.filesToUpload,
@@ -56504,15 +56551,8 @@ async function runUpload() {
         inputs.folderName,
         inputs.concurrency
       );
-      if (inputs.reportLinksFile) {
-        await appendPublishedReportSummary({
-          artifactName: inputs.artifactName,
-          folderName: inputs.folderName,
-          reportLinksFile: inputs.reportLinksFile,
-          reportSummaryIntro: inputs.reportSummaryIntro,
-          reportSummaryTitle: inputs.reportSummaryTitle,
-          websiteUrl: inputs.websiteUrl
-        });
+      if (publishedReportSummary) {
+        await appendPublishedReportSummary(publishedReportSummary);
       }
     }
   } catch (error3) {

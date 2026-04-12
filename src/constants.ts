@@ -7,7 +7,7 @@ export const Inputs = {
   Direction: 'direction',
   FolderName: 'name',
   Concurrency: 'concurrency',
-  ReportLinksFile: 'report-links-file',
+  ReportLinks: 'report-links',
   WebsiteUrl: 'website-url',
   ReportSummaryTitle: 'report-summary-title',
   ReportSummaryIntro: 'report-summary-intro',

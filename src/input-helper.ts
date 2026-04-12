@@ -29,7 +29,7 @@ export function getInputs(): UploadInputs {
   const folderName = core.getInput(Inputs.FolderName);
   const concurrencyStr = core.getInput(Inputs.Concurrency) || '8';
   const concurrency = parseInt(concurrencyStr);
-  const reportLinksFile = core.getInput(Inputs.ReportLinksFile) || undefined;
+  const reportLinks = core.getMultilineInput(Inputs.ReportLinks);
   const websiteUrl = core.getInput(Inputs.WebsiteUrl) || undefined;
   const reportSummaryTitle =
     core.getInput(Inputs.ReportSummaryTitle) || undefined;
@@ -56,8 +56,8 @@ export function getInputs(): UploadInputs {
     concurrency,
   } as UploadInputs;
 
-  if (reportLinksFile) {
-    inputs.reportLinksFile = reportLinksFile;
+  if (reportLinks.length > 0) {
+    inputs.reportLinks = reportLinks;
   }
 
   if (websiteUrl) {

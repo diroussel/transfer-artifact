@@ -38,10 +38,11 @@ inputs:
   run-number:
     description: 'Github run number used to identify artifacts'
     default: ${{ github.run_number }}
-  report-links-file:
+  report-links:
     description: >
-      Optional path to a TSV file containing report labels and artifact-relative paths or absolute URLs.
-      Each line must be in the format label<TAB>path-or-url.
+      Optional multiline list of published report definitions.
+      Each line must be in the format link-name:link-path:link-text.
+      The link-path is relative to the path input and is assumed to contain an index.html file.
     required: false
   website-url:
     description: >

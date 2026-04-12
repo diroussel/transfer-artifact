@@ -12,10 +12,12 @@ import type { UploadInputs } from '../src/upload-inputs.ts';
 
 const mockGetInput =
   jest.fn<(name: string, options?: { required?: boolean }) => string>();
+const mockGetMultilineInput = jest.fn<(name: string) => string[]>();
 const mockSetFailed = jest.fn<(message: string) => void>();
 
 jest.unstable_mockModule('@actions/core', () => ({
   getInput: mockGetInput,
+  getMultilineInput: mockGetMultilineInput,
   setFailed: mockSetFailed,
 }));
 
@@ -35,6 +37,7 @@ describe('getInputs', () => {
     process.env = { ...mockEnv };
     // Ensure clean state by removing any potential artifact bucket env var
     delete process.env.ARTIFACTS_S3_BUCKET;
+    mockGetMultilineInput.mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -53,7 +56,6 @@ describe('getInputs', () => {
       [Inputs.IfNoFilesFound]: 'warn',
       [Inputs.RetentionDays]: '',
       [Inputs.Concurrency]: '',
-      [Inputs.ReportLinksFile]: '',
       [Inputs.WebsiteUrl]: '',
       [Inputs.ReportSummaryTitle]: '',
       [Inputs.ReportSummaryIntro]: '',
@@ -196,13 +198,16 @@ describe('getInputs', () => {
       [Inputs.Direction]: 'upload',
       [Inputs.IfNoFilesFound]: 'warn',
       [Inputs.Concurrency]: '4',
-      [Inputs.ReportLinksFile]: '/tmp/report-links.tsv',
       [Inputs.WebsiteUrl]: 'https://reports.example.com/base',
       [Inputs.ReportSummaryTitle]: 'UI Test Reports',
       [Inputs.ReportSummaryIntro]: 'Published report links',
     };
 
     mockGetInput.mockImplementation((name) => mockInputs[name] || '');
+    mockGetMultilineInput.mockReturnValue([
+      'Coverage Report:coverage:HTML coverage report',
+      'Unit Tests:unit-tests:Detailed test results',
+    ]);
 
     expect(getInputs()).toStrictEqual({
       artifactName: '123-test-folder',
@@ -212,7 +217,10 @@ describe('getInputs', () => {
       folderName: 'test-folder',
       ifNoFilesFound: 'warn',
       concurrency: 4,
-      reportLinksFile: '/tmp/report-links.tsv',
+      reportLinks: [
+        'Coverage Report:coverage:HTML coverage report',
+        'Unit Tests:unit-tests:Detailed test results',
+      ],
       websiteUrl: 'https://reports.example.com/base',
       reportSummaryTitle: 'UI Test Reports',
       reportSummaryIntro: 'Published report links',
